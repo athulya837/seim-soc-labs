@@ -1,0 +1,17 @@
+_time,sourcetype,EventCode,user,source_ip,status
+2024-01-15 03:00:00,WinEventLog,4625,admin,192.168.1.100,failed
+2024-01-15 03:01:00,WinEventLog,4625,admin,192.168.1.100,failed
+2024-01-15 03:02:00,WinEventLog,4625,admin,192.168.1.100,failed
+2024-01-15 03:03:00,WinEventLog,4625,admin,192.168.1.100,failed
+2024-01-15 03:04:00,WinEventLog,4625,admin,192.168.1.100,failed
+2024-01-15 03:05:00,WinEventLog,4625,admin,192.168.1.100,failed
+2024-01-15 03:06:00,WinEventLog,4625,admin,192.168.1.100,failed
+2024-01-15 03:07:00,WinEventLog,4625,admin,192.168.1.100,failed
+2024-01-15 03:08:00,WinEventLog,4625,admin,192.168.1.100,failed
+2024-01-15 03:09:00,WinEventLog,4625,admin,192.168.1.100,failed
+2024-01-15 03:10:00,WinEventLog,4625,admin,192.168.1.100,failed
+2024-01-15 03:11:00,WinEventLog,4625,jsmith,192.168.1.100,failed
+2024-01-15 03:12:00,WinEventLog,4625,jsmith,192.168.1.100,failed
+2024-01-15 03:13:00,WinEventLog,4625,jsmith,192.168.1.100,failed
+2024-01-15 03:30:00,WinEventLog,4624,admin,192.168.1.100,success
+2024-01-15 03:31:00,WinEventLog,4740,admin,192.168.1.100,locked
