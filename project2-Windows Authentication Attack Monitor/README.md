@@ -10,7 +10,7 @@ SOC Tier 1 analyst skills.
 - Implements whitelist tuning to reduce false positives (100% reduction)
 - Confirms breaches using subsearch correlation (failed→successful logon)
 - Mapped to MITRE ATT&CK T1110 (Brute Force)
-- [View Project →](./project2-brute-force-detection/)
+
 
 ## Skills Demonstrated
 - Splunk SPL query writing
