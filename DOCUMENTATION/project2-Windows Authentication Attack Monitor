@@ -1,0 +1,242 @@
+# Project 2: Windows Authentication Attack Monitor Using Splunk
+
+## 1. Project Overview
+
+This project focuses on monitoring Windows authentication activity with Splunk Enterprise. It demonstrates how a SOC analyst can search Windows Security events, review failed and successful logons, identify suspicious authentication patterns, and document findings for further investigation.
+
+This project complements Project 1, which focuses specifically on repeated failed login attempts. Project 2 takes a broader view of authentication activity and correlation.
+
+> **Evidence note:** Complete the findings section with results from your own Splunk environment. If you use generated or sample events, label them as simulated. Do not claim that an attack occurred unless actual evidence supports that conclusion.
+
+## 2. Objectives
+
+- Monitor Windows authentication events in Splunk.
+- Review failed and successful logon activity.
+- Identify patterns that may warrant further investigation.
+- Correlate related events using timestamps, account names, source addresses, and host details when available.
+- Configure useful searches and alerts.
+- Document evidence, limitations, and recommended responses.
+
+## 3. Tools and Environment
+
+| Component | Details |
+|---|---|
+| SIEM | Splunk Enterprise 10.4 |
+| Query language | Search Processing Language (SPL) |
+| Operating system | Windows [enter version] |
+| Data source | Windows Security Event Logs [confirm] |
+| Splunk index | [enter actual index] |
+| Event collection method | [enter actual method] |
+
+Before using the searches below, verify that Windows Security events are reaching Splunk and check the actual index, sourcetype, and field names in your data.
+
+## 4. Windows Authentication Events
+
+The following Windows Security Event IDs are useful starting points:
+
+| Event ID | Meaning | Investigation use |
+|---|---|---|
+| 4624 | Successful logon | Review successful authentication and correlate with other events |
+| 4625 | Failed logon | Investigate repeated failures or unusual patterns |
+| 4648 | Logon attempted using explicit credentials | Review unusual use of supplied credentials, where logged |
+| 4740 | A user account was locked out | Investigate repeated failures and possible account misuse |
+
+Event availability depends on Windows audit policy, log collection configuration, and permissions. An event's presence alone does not prove malicious activity.
+
+References:
+- [Microsoft Event 4624 — Successful logon](https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4624)
+- [Microsoft Event 4625 — Failed logon](https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4625)
+- [Microsoft Event 4648 — A logon was attempted using explicit credentials](https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4648)
+- [Microsoft Event 4740 — A user account was locked out](https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4740)
+
+## 5. Monitoring and Detection Methodology
+
+The monitoring workflow is:
+
+1. Confirm Windows Security events are being ingested.
+2. Search for relevant authentication Event IDs.
+3. Review event timestamps, account names, host names, source addresses, and logon details where available.
+4. Identify repeated failed logons, unusual successful logons, or account lockouts.
+5. Correlate related events within an appropriate time range.
+6. Assess whether the activity is expected, suspicious, or inconclusive.
+7. Record evidence and recommended follow-up actions.
+
+## 6. SPL Searches
+
+The examples below are templates. Replace `YOUR_INDEX` and adjust field names to match your Splunk data. In some Windows add-ons, the event code may be extracted as `EventCode`; in others, a different field may be used.
+
+### 6.1 View failed logons
+
+```spl
+index=YOUR_INDEX EventCode=4625
+| table _time host user src_ip EventCode
+| sort - _time
+```
+
+**Purpose:** Lists failed logon events for review. If `user` or `src_ip` is not populated, inspect the raw event and use the field names actually present in your data.
+
+### 6.2 View successful logons
+
+```spl
+index=YOUR_INDEX EventCode=4624
+| table _time host user src_ip EventCode
+| sort - _time
+```
+
+**Purpose:** Displays successful logon events. Successful authentication is not inherently suspicious; review context such as account, host, source, time, and logon type.
+
+### 6.3 Find repeated failed logons by source IP
+
+Use this search only after verifying that `src_ip` and `user` are the correct extracted fields:
+
+```spl
+index=YOUR_INDEX EventCode=4625
+| bin _time span=10m
+| stats count as failed_attempts values(user) as targeted_users by _time src_ip
+| where failed_attempts > 5
+| sort - failed_attempts
+```
+
+**Purpose:** Groups failures into fixed ten-minute buckets by source IP and reports buckets containing more than five failures.
+
+**Limitation:** These are fixed time buckets, not a continuously rolling ten-minute window. A source IP field may also be missing from some Windows logon events, especially for local or certain logon types. Validate the query against the actual data before using it as an alert.
+
+### 6.4 Review account lockouts
+
+```spl
+index=YOUR_INDEX EventCode=4740
+| table _time host user EventCode
+| sort - _time
+```
+
+**Purpose:** Lists account-lockout events. Confirm the extracted field that represents the affected account; the relevant field can vary by parsing configuration.
+
+### 6.5 Inspect available event fields
+
+If a query returns no results, first check whether the events are present and how they are parsed:
+
+```spl
+index=YOUR_INDEX
+| head 20
+```
+
+Replace `YOUR_INDEX` with your real index. Inspect the raw events, sourcetype, and extracted fields. No results can indicate an incorrect index or field name, missing data collection, or a time-range mismatch.
+
+## 7. Alert Configuration
+
+Record the actual settings used in your Splunk environment.
+
+| Setting | Value |
+|---|---|
+| Alert name | Windows Authentication Attack Monitor |
+| Search | [Enter saved SPL search] |
+| Schedule | [Enter actual schedule] |
+| Time range | [Enter configured time range] |
+| Trigger condition | [Enter actual trigger condition] |
+| Severity | [Enter configured severity] |
+| Alert action | [Enter actual action, if any] |
+
+Choose thresholds and severity based on your environment and testing. An alert indicates that a search matched its conditions; it does not automatically confirm an attack.
+
+For scheduled searches, make sure the search time range, schedule, and time-window logic work together as intended.
+
+## 8. Investigation Workflow
+
+When a potentially suspicious pattern is found:
+
+1. Review the raw event and verify the event ID.
+2. Record the timestamp, affected account, endpoint, source address, and relevant logon details where available.
+3. Check whether failures are concentrated against one account or spread across several accounts.
+4. Review successful logons around the same time and correlate them carefully.
+5. Check for account-lockout events or other relevant endpoint activity.
+6. Consider benign explanations, including mistyped passwords, stale service credentials, or authorized testing.
+7. Record whether the result is benign, suspicious, or inconclusive, and explain why.
+8. Escalate according to the incident-response procedure when warranted.
+
+## 9. Findings and Evidence
+
+Fill this section with the actual results from your Splunk environment.
+
+| Item | Observed result |
+|---|---|
+| Date of investigation | [Enter date] |
+| Splunk index / sourcetype | [Enter actual values] |
+| Windows events available | [Enter Event IDs observed] |
+| Failed logon count | [Enter observed count] |
+| Successful logons reviewed | [Enter result] |
+| Account lockouts observed | [Enter result or not checked] |
+| Relevant hosts/accounts | [Enter values, or state unavailable] |
+| Suspicious pattern | [Describe evidence, or none found] |
+| Assessment | [Benign / Suspicious / Inconclusive] |
+
+### Evidence screenshots
+
+Add screenshots from your own Splunk instance, such as:
+
+- `screenshots/Project-2/failed-logons.png`
+- `screenshots/Project-2/successful-logons.png`
+- `screenshots/Project-2/alert-configuration.png`
+- `screenshots/Project-2/dashboard.png`
+
+Use only screenshots you actually captured. Remove or obscure credentials, tokens, personal information, and unrelated sensitive details before publishing.
+
+## 10. MITRE ATT&CK Mapping
+
+Potential mapping depends on the observed behavior and supporting evidence.
+
+- [T1110 — Brute Force](https://attack.mitre.org/techniques/T1110/): relevant when repeated credential-guessing attempts are supported by the evidence.
+- [T1078 — Valid Accounts](https://attack.mitre.org/techniques/T1078/): may be relevant when evidence supports misuse of valid credentials.
+
+Do not assign a technique merely because a matching event ID appears. Record mappings as potential unless the investigation supports the conclusion.
+
+## 11. False Positives and Limitations
+
+Potential benign explanations include:
+
+- Users entering incorrect passwords.
+- Services or scheduled tasks using outdated credentials.
+- Legitimate administrators accessing systems remotely.
+- Authorized security testing.
+- Incomplete logs or incorrectly extracted fields.
+
+The reliability of the monitoring depends on audit policy, event collection, field extraction, time synchronization, the selected search window, and the quality of the investigation.
+
+## 12. Recommended Response
+
+If activity is assessed as suspicious:
+
+1. Preserve relevant logs and record the investigation time range.
+2. Identify the affected account, host, and source address where available.
+3. Correlate failures with successful logons and other endpoint events.
+4. Escalate according to the organization's procedures.
+5. Consider proportionate measures such as account protection, multi-factor authentication, or blocking a source only after validating evidence and operational impact.
+6. Document the actions taken and the final disposition.
+
+Do not disable accounts or block IP addresses solely because they appear in authentication events. Follow the approved response process and consider business impact.
+
+## 13. Conclusion
+
+This project demonstrates a workflow for monitoring Windows authentication activity in Splunk. It uses Windows Security events to review failed and successful logons, investigate repeated failures and account lockouts, and document potential security concerns.
+
+The final assessment must be supported by evidence collected from the lab. A matching event or a high event count alone does not prove an attack.
+
+## 14. Skills Demonstrated
+
+- Splunk Enterprise and SPL
+- Windows Security Event Log analysis
+- Authentication monitoring
+- Alert triage and basic detection engineering
+- Event correlation
+- Evidence-based investigation
+- MITRE ATT&CK mapping
+- Security documentation
+
+## 15. References
+
+- Splunk Search Reference: https://docs.splunk.com/Documentation/Splunk/latest/SearchReference
+- Microsoft Event 4624: https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4624
+- Microsoft Event 4625: https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4625
+- Microsoft Event 4648: https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4648
+- Microsoft Event 4740: https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4740
+- MITRE ATT&CK T1110: https://attack.mitre.org/techniques/T1110/
+- MITRE ATT&CK T1078: https://attack.mitre.org/techniques/T1078/
